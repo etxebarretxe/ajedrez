@@ -4,3 +4,5 @@ __pycache__/
 engines/
 *.sqlite3
 .DS_Store
+build/
+dist/

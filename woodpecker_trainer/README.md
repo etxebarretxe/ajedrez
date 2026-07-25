@@ -48,6 +48,34 @@ en una carpeta `engines/` junto al proyecto.
 
 ---
 
+## Generar un ejecutable (.exe) sin que el usuario tenga Python
+
+El usuario final **no necesita Python**: se distribuye un único
+`PajaroCarpintero.exe`. PyInstaller no compila de forma cruzada, así que el
+`.exe` de Windows se genera en Windows. Dos formas:
+
+### Opción A — GitHub Actions (recomendada, cero setup)
+El workflow `.github/workflows/build-windows.yml` compila el `.exe` en un
+runner Windows real en cada push y lo publica como artefacto. Solo hay que:
+1. Ir a la pestaña **Actions** del repositorio en GitHub.
+2. Abrir la ejecución más reciente de *Build Windows EXE*.
+3. Descargar el artefacto **PajaroCarpintero-windows** → dentro está el `.exe`.
+
+### Opción B — Compilar en tu Windows
+En la máquina Windows (esta sí necesita Python una vez), dentro de
+`woodpecker_trainer/`:
+```bat
+build_windows.bat
+```
+Genera `dist\PajaroCarpintero.exe`, que ya puedes copiar y ejecutar en
+cualquier PC con Windows sin Python.
+
+> Stockfish **no** se empaqueta dentro del `.exe`: se descarga o localiza en el
+> primer arranque y se cachea en `%APPDATA%\PajaroCarpintero\engines\`. Esto
+> mantiene el ejecutable ligero y respeta la licencia GPL de Stockfish.
+
+---
+
 ## Flujo de la aplicación
 
 ```

@@ -15,8 +15,21 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = APP_DIR.parent
 
+
+def resource_base() -> Path:
+    """Directorio base de recursos de solo lectura.
+
+    Al ejecutarse empaquetado con PyInstaller los datos se extraen a un
+    directorio temporal accesible vía ``sys._MEIPASS``; en desarrollo se usa la
+    raíz del proyecto.
+    """
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS)
+    return PROJECT_DIR
+
+
 # Base de datos de posiciones (JSON entregado con las especificaciones).
-PUZZLES_JSON = PROJECT_DIR / "data_puzzles.json"
+PUZZLES_JSON = resource_base() / "data_puzzles.json"
 
 
 def user_data_dir() -> Path:

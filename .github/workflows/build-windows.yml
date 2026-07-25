@@ -1,0 +1,48 @@
+name: Build Windows EXE
+
+# Genera el ejecutable de Windows en un runner real de Windows y lo publica
+# como artefacto descargable. Así el usuario final NO necesita Python: solo
+# descarga PajaroCarpintero.exe desde la pestaña Actions de GitHub.
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'woodpecker_trainer/**'
+      - '.github/workflows/build-windows.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: woodpecker_trainer
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Compilar con PyInstaller
+        run: pyinstaller --noconfirm --clean pajaro_carpintero.spec
+
+      - name: Verificar el binario
+        run: dist\PajaroCarpintero.exe --selfcheck
+
+      - name: Publicar el ejecutable
+        uses: actions/upload-artifact@v4
+        with:
+          name: PajaroCarpintero-windows
+          path: woodpecker_trainer/dist/PajaroCarpintero.exe
+          if-no-files-found: error
