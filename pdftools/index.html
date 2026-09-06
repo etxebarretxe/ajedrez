@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Tools</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%84%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">📄</span>
+      <div>
+        <h1>PDF Tools</h1>
+        <p class="tagline">Todo se procesa en tu ordenador. Ningún archivo sale a internet.</p>
+      </div>
+    </div>
+    <button id="themeToggle" class="icon-btn" title="Cambiar tema">🌓</button>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar" id="sidebar">
+      <button class="nav-btn active" data-tool="merge"><span>📎</span> Unir</button>
+      <button class="nav-btn" data-tool="split"><span>✂️</span> Separar</button>
+      <button class="nav-btn" data-tool="organize"><span>🗂️</span> Organizar</button>
+      <button class="nav-btn" data-tool="compress"><span>🗜️</span> Comprimir</button>
+      <button class="nav-btn" data-tool="edit"><span>✏️</span> Editar</button>
+    </nav>
+
+    <main class="content">
+      <!-- MERGE -->
+      <section class="tool" id="tool-merge">
+        <div class="tool-head">
+          <h2>📎 Unir PDF</h2>
+          <p>Combina varios PDF en uno solo. Arrastra para reordenar.</p>
+        </div>
+        <div class="dropzone" id="merge-drop">
+          <p>Arrastra aquí tus PDF o <label class="link">selecciónalos<input type="file" accept="application/pdf" multiple hidden id="merge-input"></label></p>
+        </div>
+        <ul class="file-list" id="merge-list"></ul>
+        <div class="actions">
+          <button class="btn primary" id="merge-run" disabled>Unir y descargar</button>
+          <button class="btn ghost" id="merge-clear" disabled>Vaciar</button>
+        </div>
+      </section>
+
+      <!-- SPLIT -->
+      <section class="tool hidden" id="tool-split">
+        <div class="tool-head">
+          <h2>✂️ Separar PDF</h2>
+          <p>Extrae páginas o rangos de un PDF.</p>
+        </div>
+        <div class="dropzone" id="split-drop">
+          <p>Arrastra aquí un PDF o <label class="link">selecciónalo<input type="file" accept="application/pdf" hidden id="split-input"></label></p>
+        </div>
+        <div class="split-config hidden" id="split-config">
+          <p class="file-meta" id="split-meta"></p>
+          <div class="field-row">
+            <label><input type="radio" name="split-mode" value="ranges" checked> Extraer rangos a un solo PDF</label>
+            <label><input type="radio" name="split-mode" value="each"> Separar cada página en su propio PDF (ZIP)</label>
+          </div>
+          <div id="split-ranges-wrap" class="field">
+            <label for="split-ranges">Páginas / rangos (ej. <code>1-3, 5, 8-10</code>)</label>
+            <input type="text" id="split-ranges" placeholder="1-3, 5, 8-10">
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="split-run">Separar y descargar</button>
+            <button class="btn ghost" id="split-clear">Cambiar archivo</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ORGANIZE -->
+      <section class="tool hidden" id="tool-organize">
+        <div class="tool-head">
+          <h2>🗂️ Organizar páginas</h2>
+          <p>Reordena (arrastrando), rota o elimina páginas.</p>
+        </div>
+        <div class="dropzone" id="organize-drop">
+          <p>Arrastra aquí un PDF o <label class="link">selecciónalo<input type="file" accept="application/pdf" hidden id="organize-input"></label></p>
+        </div>
+        <div class="organize-toolbar hidden" id="organize-toolbar">
+          <span class="file-meta" id="organize-meta"></span>
+          <div class="spacer"></div>
+          <button class="btn ghost" id="organize-reset">Cambiar archivo</button>
+          <button class="btn primary" id="organize-run">Guardar y descargar</button>
+        </div>
+        <div class="thumb-grid" id="organize-grid"></div>
+      </section>
+
+      <!-- COMPRESS -->
+      <section class="tool hidden" id="tool-compress">
+        <div class="tool-head">
+          <h2>🗜️ Comprimir PDF</h2>
+          <p>Reduce el tamaño del archivo.</p>
+        </div>
+        <div class="dropzone" id="compress-drop">
+          <p>Arrastra aquí un PDF o <label class="link">selecciónalo<input type="file" accept="application/pdf" hidden id="compress-input"></label></p>
+        </div>
+        <div class="compress-config hidden" id="compress-config">
+          <p class="file-meta" id="compress-meta"></p>
+          <div class="field">
+            <label>Nivel de compresión</label>
+            <div class="segmented" id="compress-level">
+              <button data-level="low" class="active">Suave</button>
+              <button data-level="medium">Media</button>
+              <button data-level="high">Fuerte</button>
+            </div>
+          </div>
+          <label class="check"><input type="checkbox" id="compress-lossless"> Solo optimizar (sin rasterizar, conserva el texto seleccionable)</label>
+          <p class="hint" id="compress-hint">La compresión por imagen rasteriza las páginas: reduce mucho los PDF escaneados, pero el texto deja de ser seleccionable. Marca la casilla de arriba si quieres conservar el texto.</p>
+          <div class="actions">
+            <button class="btn primary" id="compress-run">Comprimir</button>
+            <button class="btn ghost" id="compress-clear">Cambiar archivo</button>
+          </div>
+          <div class="result hidden" id="compress-result"></div>
+        </div>
+      </section>
+
+      <!-- EDIT -->
+      <section class="tool hidden" id="tool-edit">
+        <div class="tool-head">
+          <h2>✏️ Editar (superponer)</h2>
+          <p>Añade texto, formas o tapa zonas encima del PDF. No modifica el texto original.</p>
+        </div>
+        <div class="dropzone" id="edit-drop">
+          <p>Arrastra aquí un PDF o <label class="link">selecciónalo<input type="file" accept="application/pdf" hidden id="edit-input"></label></p>
+        </div>
+        <div class="editor hidden" id="editor">
+          <div class="editor-toolbar">
+            <button class="btn small" id="edit-add-text">➕ Texto</button>
+            <button class="btn small" id="edit-add-rect">▭ Rectángulo</button>
+            <button class="btn small" id="edit-add-cover">⬜ Tapar (blanco)</button>
+            <span class="divider"></span>
+            <label class="tool-field">Color
+              <input type="color" id="edit-color" value="#111111">
+            </label>
+            <label class="tool-field">Tamaño texto
+              <input type="number" id="edit-fontsize" value="16" min="6" max="96" style="width:60px">
+            </label>
+            <span class="divider"></span>
+            <button class="btn small danger" id="edit-delete-el" disabled>🗑 Borrar elemento</button>
+            <div class="spacer"></div>
+            <span class="file-meta" id="edit-pageinfo"></span>
+            <button class="btn small" id="edit-prev">◀</button>
+            <button class="btn small" id="edit-next">▶</button>
+            <span class="divider"></span>
+            <button class="btn ghost small" id="edit-reset">Cambiar archivo</button>
+            <button class="btn primary small" id="edit-run">Guardar y descargar</button>
+          </div>
+          <div class="editor-stage" id="edit-stage">
+            <div class="page-wrap" id="edit-page-wrap">
+              <canvas id="edit-canvas"></canvas>
+              <div class="overlay" id="edit-overlay"></div>
+            </div>
+          </div>
+          <p class="hint">Consejo: haz doble clic en una caja de texto para escribir. Arrastra desde el borde inferior derecho para redimensionar. Los elementos son por página.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+  <div class="spinner-overlay" id="spinner" hidden><div class="spinner"></div><span id="spinner-text">Procesando…</span></div>
+
+  <!-- Librerías locales (funcionan sin internet) -->
+  <script src="vendor/pdf-lib.min.js"></script>
+  <script src="vendor/fontkit.umd.min.js"></script>
+  <script src="vendor/jszip.min.js"></script>
+  <script src="vendor/pdf.min.js"></script>
+  <!-- App -->
+  <script src="js/common.js"></script>
+  <script src="js/merge.js"></script>
+  <script src="js/split.js"></script>
+  <script src="js/organize.js"></script>
+  <script src="js/compress.js"></script>
+  <script src="js/edit.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
