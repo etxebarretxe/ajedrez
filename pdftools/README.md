@@ -8,7 +8,9 @@ más habituales.
 
 - 📎 **Unir** — combina varios PDF en uno; arrastra para reordenarlos.
 - ✂️ **Separar** — extrae páginas o rangos (`1-3, 5, 8-10`) a un PDF, o separa
-  cada página en su propio PDF dentro de un ZIP.
+  cada página en su propio PDF dentro de un ZIP. Muestra miniaturas de todas
+  las páginas: haz clic en una para quitarla (o escribe el rango a mano, las
+  dos vistas se mantienen sincronizadas).
 - 🗂️ **Organizar** — reordena páginas arrastrando, rótalas o elimínalas.
 - 🗜️ **Comprimir** — reduce el tamaño. Dos modos:
   - *Rasterizado* (Suave / Media / Fuerte): reduce mucho los PDF con imágenes o
@@ -17,6 +19,8 @@ más habituales.
     seleccionable (la reducción es menor).
 - ✏️ **Editar (superponer)** — añade cajas de texto, rectángulos de color o tapa
   zonas con un recuadro blanco. No modifica el texto original: dibuja encima.
+  Respeta la rotación real del PDF, así que las páginas escaneadas en apaisado
+  (típico de impresora) se ven derechas al editar, igual que en cualquier visor.
 
 ## Cómo abrirla (Windows)
 

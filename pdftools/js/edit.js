@@ -1,11 +1,20 @@
 /* edit.js — Superponer texto, rectángulos y "tapar" zonas sobre el PDF.
    No modifica el texto original: dibuja una capa encima.
-   Las páginas se renderizan sin rotación para que las coordenadas se
-   correspondan exactamente con el espacio del PDF al exportar. */
+
+   Sobre la rotación: un PDF guarda cada página con una etiqueta /Rotate
+   (0/90/180/270) que le dice a cualquier lector cómo mostrarla (típico en
+   escaneos de impresora). Aquí renderizamos respetando esa rotación, para
+   que el usuario vea la página igual que en cualquier otro visor.
+   Los elementos se guardan como fracciones (0–1) de la página TAL COMO SE VE
+   en pantalla (ya rotada). Al exportar, usamos las funciones de conversión
+   de coordenadas de pdf.js (convertToPdfPoint), que ya conocen la rotación
+   de la página, para traducir esa posición de pantalla al sistema de
+   coordenadas interno del PDF que espera pdf-lib. Así no hace falta escribir
+   a mano la trigonometría de cada caso (0/90/180/270). */
 const Edit = (() => {
   let file = null, bytes = null, pdfjsDoc = null;
   let current = 1, renderScale = 1, canvasW = 0, canvasH = 0;
-  let elements = {};   // { [pageNum]: [ {id,type,nx,ny,nw,nh,color,text,nfont} ] }
+  let elements = {};   // { [pageNum]: [ {id,type,nx,ny,nw,nh,color,text,fontPt} ] }
   let selected = null; // { page, id }
   let nextId = 1;
 
@@ -32,11 +41,12 @@ const Edit = (() => {
 
   async function renderPage() {
     const page = await pdfjsDoc.getPage(current);
-    // rotation: 0 -> renderizamos en orientación natural del media box
+    // Usamos page.rotate (la rotación real guardada en el PDF) para que la
+    // página se vea "derecha", igual que en cualquier visor normal.
     const stageW = Math.min(900, pageWrapEl.parentElement.clientWidth - 40 || 900);
-    const raw = page.getViewport({ scale: 1, rotation: 0 });
+    const raw = page.getViewport({ scale: 1, rotation: page.rotate });
     renderScale = stageW / raw.width;
-    const viewport = page.getViewport({ scale: renderScale, rotation: 0 });
+    const viewport = page.getViewport({ scale: renderScale, rotation: page.rotate });
     canvasEl.width = Math.ceil(viewport.width);
     canvasEl.height = Math.ceil(viewport.height);
     canvasW = canvasEl.width; canvasH = canvasEl.height;
@@ -66,7 +76,7 @@ const Edit = (() => {
         ta.className = 'el-text';
         ta.value = el.text;
         ta.style.color = el.color;
-        ta.style.fontSize = (el.nfont * canvasH) + 'px';
+        ta.style.fontSize = (el.fontPt * renderScale) + 'px';
         ta.addEventListener('input', () => { el.text = ta.value; });
         ta.addEventListener('mousedown', (e) => e.stopPropagation()); // permitir escribir
         ta.addEventListener('focus', () => select(el.id));
@@ -93,7 +103,7 @@ const Edit = (() => {
     const el = (elements[current] || []).find(e => e.id === id);
     if (el) {
       if (el.color) colorInput.value = normalizeHex(el.color);
-      if (el.type === 'text') fontSizeInput.value = Math.round(el.nfont * canvasH / renderScale);
+      if (el.type === 'text') fontSizeInput.value = Math.round(el.fontPt);
     }
     renderOverlaySelectionOnly();
   }
@@ -127,15 +137,11 @@ const Edit = (() => {
       e.preventDefault(); e.stopPropagation();
       const startX = e.clientX, startY = e.clientY;
       const ow = el.nw, oh = el.nh;
-      const ta = node.querySelector('.el-text');
       const move = (ev) => {
         el.nw = Math.max(0.02, ow + (ev.clientX - startX) / canvasW);
         el.nh = Math.max(0.015, oh + (ev.clientY - startY) / canvasH);
         node.style.width = (el.nw * 100) + '%';
         node.style.height = (el.nh * 100) + '%';
-        if (ta && el.type === 'text') {
-          // el tamaño de fuente no cambia al redimensionar la caja
-        }
       };
       const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
       document.addEventListener('mousemove', move);
@@ -158,7 +164,7 @@ const Edit = (() => {
       nx: 0.35, ny: 0.4, nw: type === 'text' ? 0.3 : 0.25, nh: type === 'text' ? 0.06 : 0.12,
       color,
       text: type === 'text' ? 'Texto' : '',
-      nfont: (parseInt(fontSizeInput.value, 10) * renderScale) / canvasH,
+      fontPt: parseInt(fontSizeInput.value, 10) || 16,
     };
     list.push(el);
     selected = { page: current, id: el.id };
@@ -182,7 +188,7 @@ const Edit = (() => {
   function applyFontSize() {
     if (!selected) return;
     const el = (elements[selected.page] || []).find(e => e.id === selected.id);
-    if (el && el.type === 'text') { el.nfont = (parseInt(fontSizeInput.value, 10) * renderScale) / canvasH; renderOverlay(); }
+    if (el && el.type === 'text') { el.fontPt = parseInt(fontSizeInput.value, 10) || el.fontPt; renderOverlay(); }
   }
 
   async function nav(delta) {
@@ -190,6 +196,13 @@ const Edit = (() => {
     if (next < 1 || next > pdfjsDoc.numPages) return;
     current = next; selected = null;
     await renderPage();
+  }
+
+  // Convierte un punto en píxeles de "pantalla" (espacio del viewport `conv`,
+  // que ya incluye la rotación real de la página) al sistema de coordenadas
+  // interno del PDF que usa pdf-lib.
+  function toPdfPoint(conv, x, y) {
+    return conv.convertToPdfPoint(x, y);
   }
 
   async function run() {
@@ -201,28 +214,37 @@ const Edit = (() => {
       const pages = doc.getPages();
       for (const [pageNumStr, list] of Object.entries(elements)) {
         if (!list.length) continue;
-        const page = pages[(+pageNumStr) - 1];
-        const { width: Wp, height: Hp } = page.getSize();
+        const pageNum = +pageNumStr;
+        const page = pages[pageNum - 1];
+
+        // Viewport propio de esta página a escala 1 (1 px = 1 punto PDF),
+        // solo para convertir coordenadas — no se usa para dibujar nada.
+        const pjsPage = await pdfjsDoc.getPage(pageNum);
+        const conv = pjsPage.getViewport({ scale: 1, rotation: pjsPage.rotate });
+
         for (const el of list) {
-          const xPt = el.nx * Wp;
-          const yTopPt = el.ny * Hp;         // desde arriba
-          const wPt = el.nw * Wp;
-          const hPt = el.nh * Hp;
+          // Esquinas del elemento en espacio de pantalla (top-left, bottom-right)
+          const x1 = el.nx * conv.width, y1 = el.ny * conv.height;
+          const x2 = (el.nx + el.nw) * conv.width, y2 = (el.ny + el.nh) * conv.height;
+          const [pxA, pyA] = toPdfPoint(conv, x1, y1);
+          const [pxB, pyB] = toPdfPoint(conv, x2, y2);
+          const x = Math.min(pxA, pxB), y = Math.min(pyA, pyB);
+          const w = Math.abs(pxB - pxA), h = Math.abs(pyB - pyA);
+
           if (el.type === 'rect') {
-            page.drawRectangle({
-              x: xPt, y: Hp - yTopPt - hPt, width: wPt, height: hPt,
-              color: hexToRgb(el.color),
-            });
+            page.drawRectangle({ x, y, width: w, height: h, color: hexToRgb(el.color) });
           } else {
-            const fontPt = el.nfont * Hp;
             const color = hexToRgb(el.color);
             const lines = (el.text || '').split('\n');
-            const lineH = fontPt * 1.15;
+            const lineH = el.fontPt * 1.15; // en "píxeles" de `conv` (escala 1 = puntos PDF)
             lines.forEach((line, i) => {
-              const baseline = Hp - yTopPt - fontPt * 0.80 - i * lineH;
-              if (line.length) {
-                page.drawText(line, { x: xPt, y: baseline, size: fontPt, font, color });
-              }
+              if (!line.length) return;
+              // Punto de base de esta línea, en espacio de pantalla, convertido
+              // individualmente: así cada línea cae en su sitio sin importar
+              // si la página está rotada 0/90/180/270.
+              const bx = x1, by = y1 + el.fontPt * 0.80 + i * lineH;
+              const [px, py] = toPdfPoint(conv, bx, by);
+              page.drawText(line, { x: px, y: py, size: el.fontPt, font, color });
             });
           }
         }
