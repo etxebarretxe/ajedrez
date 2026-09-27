@@ -1,9 +1,16 @@
 /* split.js — Separar / extraer páginas de un PDF.
    La rejilla de miniaturas y el campo de texto son dos vistas del mismo
-   estado (el Set `excluded`): cambiar una actualiza la otra. */
+   estado (el Set `excluded`): cambiar una actualiza la otra.
+
+   Importante para el rendimiento: la rejilla se CONSTRUYE una sola vez por
+   archivo cargado (es la parte cara: pdf.js tiene que dibujar cada página en
+   un canvas). Marcar/desmarcar una página después es barato -> solo cambia
+   la clase CSS y el texto del botón de esa tarjeta concreta, sin volver a
+   dibujar ninguna página. Con muchas páginas, la diferencia se nota mucho. */
 const Split = (() => {
   let file = null, bytes = null, pdfjsDoc = null, pageCount = 0;
   let excluded = new Set(); // índices 0-based marcados para quitar
+  let thumbCards = [];      // [{ card, btn }] por índice, creadas una sola vez
   let dropEl, configEl, metaEl, rangesInput, rangesWrap, gridEl;
 
   // Parsea "1-3, 5, 8-10" a un array de índices (0-based), validando límites.
@@ -66,7 +73,7 @@ const Split = (() => {
       dropEl.classList.add('hidden');
       configEl.classList.remove('hidden');
       syncTextFromExcluded();
-      await renderGrid();
+      await buildGrid();
     } catch (err) {
       console.error(err);
       toast('No se pudo abrir el PDF: ' + err.message, true);
@@ -75,23 +82,22 @@ const Split = (() => {
     }
   }
 
-  // Evita una condición de carrera: si el usuario teclea rápido en el campo
-  // de rangos, cada tecla puede disparar un renderGrid() nuevo antes de que
-  // el anterior (que es async, una miniatura a la vez) termine. Con este
-  // contador, cualquier render que ya no sea "el más reciente" se aborta en
-  // cuanto puede detectarlo, en vez de seguir añadiendo miniaturas viejas.
-  let gridGen = 0;
-  async function renderGrid() {
-    const myGen = ++gridGen;
+  // Construye la rejilla UNA VEZ: dibuja cada página y crea su tarjeta.
+  // Guarda { card, btn } por índice para poder actualizarlas después sin
+  // volver a renderizar. `buildGen` protege el caso (raro) de cargar un
+  // archivo nuevo mientras el anterior aún se estaba construyendo.
+  let buildGen = 0;
+  async function buildGrid() {
+    const myGen = ++buildGen;
     gridEl.innerHTML = '';
+    thumbCards = [];
     for (let i = 0; i < pageCount; i++) {
-      const isExcluded = excluded.has(i);
-      const card = document.createElement('div');
-      card.className = 'thumb' + (isExcluded ? ' deleted' : '');
-      card.dataset.idx = i;
-
       const { canvas } = await renderPageToCanvas(pdfjsDoc, i + 1, 150);
-      if (myGen !== gridGen) return; // un render más nuevo ya está en marcha
+      if (myGen !== buildGen) return; // se cargó otro archivo mientras tanto
+
+      const card = document.createElement('div');
+      card.className = 'thumb';
+      card.dataset.idx = i;
       card.appendChild(canvas);
 
       const pnum = document.createElement('span');
@@ -101,30 +107,48 @@ const Split = (() => {
 
       const actions = document.createElement('div');
       actions.className = 'thumb-actions';
-      actions.innerHTML = `<button data-act="toggle">${isExcluded ? '↺ Restaurar' : '🗑 Quitar'}</button>`;
-      actions.querySelector('[data-act="toggle"]').addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleExcluded(i);
-      });
+      const btn = document.createElement('button');
+      btn.dataset.act = 'toggle';
+      actions.appendChild(btn);
       card.appendChild(actions);
+
+      btn.addEventListener('click', (e) => { e.stopPropagation(); toggleExcluded(i); });
       card.addEventListener('click', () => toggleExcluded(i));
+
       gridEl.appendChild(card);
+      thumbCards[i] = { card, btn };
+      applyCardState(i); // clase + texto iniciales (todas incluidas al cargar)
     }
+  }
+
+  // Refleja el estado de `excluded` en UNA tarjeta ya existente: barato,
+  // no toca el canvas ni el resto de la rejilla.
+  function applyCardState(i) {
+    const entry = thumbCards[i];
+    if (!entry) return;
+    const isExcluded = excluded.has(i);
+    entry.card.classList.toggle('deleted', isExcluded);
+    entry.btn.textContent = isExcluded ? '↺ Restaurar' : '🗑 Quitar';
+  }
+
+  function applyAllCardStates() {
+    for (let i = 0; i < pageCount; i++) applyCardState(i);
   }
 
   function toggleExcluded(i) {
     if (excluded.has(i)) excluded.delete(i); else excluded.add(i);
     syncTextFromExcluded();
-    renderGrid();
+    applyCardState(i);
   }
 
-  // El usuario escribe en el campo de texto -> reconstruye `excluded` y refresca la rejilla.
+  // El usuario escribe en el campo de texto -> reconstruye `excluded` y
+  // refresca solo el estado visual de las tarjetas (sin re-renderizarlas).
   function onRangesInput() {
     try {
       const included = new Set(parseRanges(rangesInput.value, pageCount));
       excluded = new Set();
       for (let i = 0; i < pageCount; i++) if (!included.has(i)) excluded.add(i);
-      renderGrid();
+      applyAllCardStates();
     } catch (e) {
       // Entrada incompleta o inválida mientras se escribe: no tocar la rejilla todavía.
     }
@@ -173,7 +197,7 @@ const Split = (() => {
   }
 
   function reset() {
-    file = bytes = pdfjsDoc = null; pageCount = 0; excluded = new Set();
+    file = bytes = pdfjsDoc = null; pageCount = 0; excluded = new Set(); thumbCards = [];
     gridEl.innerHTML = '';
     configEl.classList.add('hidden');
     dropEl.classList.remove('hidden');
