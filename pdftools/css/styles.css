@@ -176,6 +176,10 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-
   width: 100%; height: 100%; border: none; background: transparent;
   resize: none; outline: none; overflow: hidden; padding: 0;
   font-family: Helvetica, Arial, sans-serif; line-height: 1.15;
+  /* Por defecto deja pasar los clics al contenedor (para poder arrastrar la
+     caja). Mientras se está escribiendo (ver edit.js, foco/desenfoque) pasa
+     a "auto" para poder colocar el cursor y seleccionar texto con normalidad. */
+  pointer-events: none;
 }
 .el .resize {
   position: absolute; right: -5px; bottom: -5px; width: 12px; height: 12px;

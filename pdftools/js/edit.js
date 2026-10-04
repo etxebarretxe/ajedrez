@@ -78,8 +78,13 @@ const Edit = (() => {
         ta.style.color = el.color;
         ta.style.fontSize = (el.fontPt * renderScale) + 'px';
         ta.addEventListener('input', () => { el.text = ta.value; });
-        ta.addEventListener('mousedown', (e) => e.stopPropagation()); // permitir escribir
-        ta.addEventListener('focus', () => select(el.id));
+        ta.addEventListener('mousedown', (e) => e.stopPropagation()); // permitir escribir/seleccionar texto
+        // Por defecto (CSS) el textarea no captura el ratón, para que se
+        // pueda arrastrar la caja desde cualquier punto. Solo mientras está
+        // enfocado (escribiendo) pasa a capturarlo, para poder colocar el
+        // cursor o seleccionar texto en vez de mover la caja.
+        ta.addEventListener('focus', () => { select(el.id); ta.style.pointerEvents = 'auto'; });
+        ta.addEventListener('blur', () => { ta.style.pointerEvents = 'none'; });
         node.appendChild(ta);
       } else {
         node.style.background = el.color;
@@ -118,7 +123,6 @@ const Edit = (() => {
     // Mover
     node.addEventListener('mousedown', (e) => {
       if (e.target === handle) return;
-      if (e.target.classList.contains('el-text') && document.activeElement === e.target) return;
       e.preventDefault();
       const startX = e.clientX, startY = e.clientY;
       const ox = el.nx, oy = el.ny;
