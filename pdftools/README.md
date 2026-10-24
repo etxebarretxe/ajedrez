@@ -21,6 +21,10 @@ más habituales.
   zonas con un recuadro blanco. No modifica el texto original: dibuja encima.
   Respeta la rotación real del PDF, así que las páginas escaneadas en apaisado
   (típico de impresora) se ven derechas al editar, igual que en cualquier visor.
+- 🖼️ **Imagen a PDF** — convierte una o varias imágenes (JPG, PNG, WEBP...) en
+  un PDF; arrastra para reordenarlas. Respeta la rotación EXIF de las fotos de
+  móvil (si no, algunas conversiones las dejan "tumbadas"). Dos tamaños de
+  página: ajustado a cada imagen, o A4 centrada.
 
 ## Cómo abrirla (Windows)
 
@@ -57,6 +61,6 @@ pdftools/
 ├── iniciar.bat       # lanzador para Windows
 ├── css/styles.css
 ├── js/               # una herramienta por archivo
-│   ├── common.js  merge.js  split.js  organize.js  compress.js  edit.js  app.js
+│   ├── common.js  merge.js  split.js  organize.js  compress.js  edit.js  img2pdf.js  app.js
 └── vendor/           # librerías locales (pdf-lib, pdf.js, jszip, fontkit)
 ```

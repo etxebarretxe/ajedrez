@@ -20,13 +20,7 @@ const Compress = (() => {
     resultEl.classList.add('hidden');
   }
 
-  function dataURLToBytes(dataURL) {
-    const b64 = dataURL.split(',')[1];
-    const bin = atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-    return arr;
-  }
+  // dataURLToBytes vive ahora en common.js (compartida con img2pdf.js)
 
   async function losslessOptimize() {
     const doc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });

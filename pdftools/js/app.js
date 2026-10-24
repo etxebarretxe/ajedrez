@@ -37,4 +37,5 @@
   Organize.init();
   Compress.init();
   Edit.init();
+  Img2Pdf.init();
 })();

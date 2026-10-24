@@ -88,6 +88,10 @@ body {
 }
 .file-list li.dragging { opacity: .4; }
 .file-list li .grip { color: var(--text-dim); cursor: grab; }
+.file-list li .thumb-img {
+  width: 36px; height: 48px; object-fit: cover; border-radius: 4px;
+  border: 1px solid var(--border); background: var(--surface-2); flex-shrink: 0;
+}
 .file-list li .fname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .file-list li .fsize { color: var(--text-dim); font-size: 12px; }
 .file-list li .remove { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 16px; }

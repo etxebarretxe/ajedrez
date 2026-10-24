@@ -26,6 +26,7 @@
       <button class="nav-btn" data-tool="organize"><span>🗂️</span> Organizar</button>
       <button class="nav-btn" data-tool="compress"><span>🗜️</span> Comprimir</button>
       <button class="nav-btn" data-tool="edit"><span>✏️</span> Editar</button>
+      <button class="nav-btn" data-tool="img2pdf"><span>🖼️</span> Imagen a PDF</button>
     </nav>
 
     <main class="content">
@@ -160,6 +161,30 @@
           <p class="hint">Consejo: arrastra una caja para moverla. Haz doble clic para escribir dentro. Arrastra desde el borde inferior derecho para redimensionar. Los elementos son por página.</p>
         </div>
       </section>
+
+      <!-- IMG2PDF -->
+      <section class="tool hidden" id="tool-img2pdf">
+        <div class="tool-head">
+          <h2>🖼️ Imagen a PDF</h2>
+          <p>Convierte una o varias imágenes (JPG, PNG, WEBP...) en un PDF. Arrastra para reordenarlas.</p>
+        </div>
+        <div class="dropzone" id="img2pdf-drop">
+          <p>Arrastra aquí tus imágenes o <label class="link">selecciónalas<input type="file" accept="image/*" multiple hidden id="img2pdf-input"></label></p>
+        </div>
+        <ul class="file-list" id="img2pdf-list"></ul>
+        <div class="field" id="img2pdf-options" hidden>
+          <label>Tamaño de página</label>
+          <div class="segmented" id="img2pdf-size">
+            <button data-size="fit" class="active">Ajustar a cada imagen</button>
+            <button data-size="a4">A4 (centrada)</button>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="img2pdf-run" disabled>Crear PDF</button>
+          <button class="btn ghost" id="img2pdf-clear" disabled>Vaciar</button>
+        </div>
+        <p class="hint">¿El PDF resultante pesa mucho? Puedes reducirlo después con la herramienta "Comprimir".</p>
+      </section>
     </main>
   </div>
 
@@ -178,6 +203,7 @@
   <script src="js/organize.js"></script>
   <script src="js/compress.js"></script>
   <script src="js/edit.js"></script>
+  <script src="js/img2pdf.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

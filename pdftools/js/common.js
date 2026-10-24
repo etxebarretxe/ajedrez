@@ -63,11 +63,15 @@ function baseName(name) {
 }
 
 /* ---------- Zona de arrastre reutilizable ---------- */
-// onFiles recibe un array de File (ya filtrados a PDF).
-function setupDropzone(zoneEl, inputEl, onFiles, { multiple = false } = {}) {
+// onFiles recibe un array de File (ya filtrados). Por defecto filtra a PDF;
+// pasa `filter`/`invalidMessage` para aceptar otro tipo de archivo (p.ej.
+// imágenes en "Imagen a PDF").
+function setupDropzone(zoneEl, inputEl, onFiles, { multiple = false, filter, invalidMessage } = {}) {
+  const fileFilter = filter || (f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+  const errorMsg = invalidMessage || 'Selecciona archivos PDF válidos.';
   const handle = (fileList) => {
-    let files = Array.from(fileList).filter(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
-    if (!files.length) { toast('Selecciona archivos PDF válidos.', true); return; }
+    let files = Array.from(fileList).filter(fileFilter);
+    if (!files.length) { toast(errorMsg, true); return; }
     if (!multiple) files = [files[0]];
     onFiles(files);
   };
@@ -118,4 +122,13 @@ function hexToRgb(hex) {
   const g = parseInt(m.substring(2, 4), 16) / 255;
   const b = parseInt(m.substring(4, 6), 16) / 255;
   return PDFLib.rgb(r, g, b);
+}
+
+// Convierte un data URL (de canvas.toDataURL) a bytes crudos.
+function dataURLToBytes(dataURL) {
+  const b64 = dataURL.split(',')[1];
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
 }
