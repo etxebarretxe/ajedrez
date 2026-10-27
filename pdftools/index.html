@@ -27,6 +27,7 @@
       <button class="nav-btn" data-tool="compress"><span>🗜️</span> Comprimir</button>
       <button class="nav-btn" data-tool="edit"><span>✏️</span> Editar</button>
       <button class="nav-btn" data-tool="img2pdf"><span>🖼️</span> Imagen a PDF</button>
+      <button class="nav-btn" data-tool="watermark"><span>🛡️</span> Marca de agua</button>
     </nav>
 
     <main class="content">
@@ -185,6 +186,76 @@
         </div>
         <p class="hint">¿El PDF resultante pesa mucho? Puedes reducirlo después con la herramienta "Comprimir".</p>
       </section>
+
+      <!-- WATERMARK -->
+      <section class="tool hidden" id="tool-watermark">
+        <div class="tool-head">
+          <h2>🛡️ Marca de agua</h2>
+          <p>Para enviar documentación sensible (DNI, nóminas...): añade una marca diagonal repetida con destinatario y fecha. El resultado se aplana, así que la marca no se puede quitar con un editor de PDF.</p>
+        </div>
+        <div class="dropzone" id="wm-drop">
+          <p>Arrastra aquí PDF o imágenes o <label class="link">selecciónalos<input type="file" accept="application/pdf,image/*" multiple hidden id="wm-input"></label></p>
+        </div>
+        <ul class="file-list" id="wm-list"></ul>
+
+        <div class="wm-layout">
+          <div class="wm-form">
+            <div class="field">
+              <label for="wm-texto">Texto</label>
+              <input type="text" id="wm-texto" value="Copia exclusiva para">
+            </div>
+            <div class="field">
+              <label for="wm-dest">Destinatario</label>
+              <input type="text" id="wm-dest" placeholder="Ej.: Banco X">
+            </div>
+            <div class="field">
+              <label for="wm-motivo">Motivo (opcional)</label>
+              <input type="text" id="wm-motivo" placeholder="Ej.: Apertura de cuenta">
+            </div>
+            <div class="field">
+              <label class="check"><input type="checkbox" id="wm-usedate" checked> Incluir fecha</label>
+              <input type="date" id="wm-date">
+            </div>
+            <p class="hint">Texto final: <b id="wm-final"></b></p>
+
+            <div class="field">
+              <label for="wm-color">Color de la letra</label>
+              <input type="color" id="wm-color" value="#5a5a5a">
+            </div>
+            <div class="field">
+              <label for="wm-size">Tamaño de letra: <b id="wm-size-val">3</b></label>
+              <input type="range" id="wm-size" min="1" max="10" step="0.5" value="3">
+            </div>
+            <div class="field">
+              <label for="wm-opacity">Opacidad: <b id="wm-opacity-val">35%</b></label>
+              <input type="range" id="wm-opacity" min="10" max="100" step="5" value="35">
+            </div>
+            <div class="field">
+              <label for="wm-angle">Inclinación (grados)</label>
+              <input type="number" id="wm-angle" value="30" min="0" max="90">
+            </div>
+            <div class="field">
+              <label for="wm-quality">Calidad</label>
+              <select id="wm-quality">
+                <option value="ligera">Ligera (150 ppp, archivo pequeño)</option>
+                <option value="normal" selected>Normal (200 ppp)</option>
+                <option value="alta">Alta (300 ppp, archivo grande)</option>
+              </select>
+            </div>
+            <div class="actions">
+              <button class="btn primary" id="wm-run" disabled>Aplicar y descargar</button>
+              <button class="btn ghost" id="wm-clear" disabled>Vaciar</button>
+            </div>
+          </div>
+
+          <div class="wm-preview-box">
+            <p class="file-meta">Vista previa (primera página)</p>
+            <canvas id="wm-preview" hidden></canvas>
+            <p class="hint" id="wm-preview-empty">Añade un archivo para ver cómo quedará la marca.</p>
+          </div>
+        </div>
+        <p class="hint">Cada página se convierte en imagen: el texto original deja de ser seleccionable y se eliminan los metadatos (autor, programa, fechas). Si necesitas contraseña, aplícala después con otro programa.</p>
+      </section>
     </main>
   </div>
 
@@ -204,6 +275,7 @@
   <script src="js/compress.js"></script>
   <script src="js/edit.js"></script>
   <script src="js/img2pdf.js"></script>
+  <script src="js/watermark.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

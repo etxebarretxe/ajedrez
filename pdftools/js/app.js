@@ -38,4 +38,5 @@
   Compress.init();
   Edit.init();
   Img2Pdf.init();
+  Watermark.init();
 })();

@@ -25,6 +25,12 @@ más habituales.
   un PDF; arrastra para reordenarlas. Respeta la rotación EXIF de las fotos de
   móvil (si no, algunas conversiones las dejan "tumbadas"). Dos tamaños de
   página: ajustado a cada imagen, o A4 centrada.
+- 🛡️ **Marca de agua** — para enviar documentación sensible (DNI, nóminas...).
+  Admite PDF e imágenes (se combinan en un solo PDF). Rellenas texto,
+  destinatario, motivo y fecha, eliges color, tamaño de letra, opacidad e
+  inclinación, y ves la vista previa en vivo. La marca se repite en diagonal
+  por toda la página y el resultado se aplana (una imagen por página), así que
+  no se puede quitar con un editor de PDF. Elimina los metadatos.
 
 ## Cómo abrirla (Windows)
 
@@ -52,6 +58,8 @@ internet.
   Para eso haría falta una app de escritorio con un motor tipo Ghostscript.
 - Sin OCR ni conversión a Word/Excel/PowerPoint (fuera del alcance de esta v1).
 - Los PDF protegidos con contraseña deben desbloquearse antes de usarlos.
+- "Marca de agua" no puede proteger el PDF resultante con contraseña (pdf-lib no
+  cifra PDFs); si lo necesitas, aplícala después con otro programa.
 
 ## Estructura
 
@@ -61,6 +69,6 @@ pdftools/
 ├── iniciar.bat       # lanzador para Windows
 ├── css/styles.css
 ├── js/               # una herramienta por archivo
-│   ├── common.js  merge.js  split.js  organize.js  compress.js  edit.js  img2pdf.js  app.js
+│   ├── common.js  merge.js  split.js  organize.js  compress.js  edit.js  img2pdf.js  watermark.js  app.js
 └── vendor/           # librerías locales (pdf-lib, pdf.js, jszip, fontkit)
 ```

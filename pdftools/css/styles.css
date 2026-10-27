@@ -115,11 +115,19 @@ body {
 /* Fields */
 .field { margin: 16px 0; }
 .field label { display: block; margin-bottom: 6px; font-size: 14px; }
-.field input[type="text"] {
+.field input[type="text"], .field input[type="date"], .field input[type="number"], .field select {
   width: 100%; max-width: 400px; padding: 10px 12px;
   border: 1px solid var(--border); border-radius: 8px;
   background: var(--surface); color: var(--text); font-size: 14px;
 }
+.field input[type="range"] { width: 100%; max-width: 400px; }
+.field .check { margin: 0 0 6px; }
+
+/* Marca de agua: formulario a la izquierda, vista previa a la derecha */
+.wm-layout { display: grid; grid-template-columns: minmax(260px, 400px) 1fr; gap: 24px; margin-top: 16px; align-items: start; }
+.wm-preview-box { position: sticky; top: 76px; }
+.wm-preview-box canvas { max-width: 100%; height: auto; border: 1px solid var(--border); background: #fff; box-shadow: var(--shadow); }
+@media (max-width: 900px) { .wm-layout { grid-template-columns: 1fr; } .wm-preview-box { position: static; } }
 .field-row { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
 .field-row label { font-size: 14px; }
 .file-meta { color: var(--text-dim); font-size: 13px; }
