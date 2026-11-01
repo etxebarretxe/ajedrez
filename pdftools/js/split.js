@@ -11,31 +11,33 @@ const Split = (() => {
   let file = null, bytes = null, pdfjsDoc = null, pageCount = 0;
   let excluded = new Set(); // índices 0-based marcados para quitar
   let thumbCards = [];      // [{ card, btn }] por índice, creadas una sola vez
-  let dropEl, configEl, metaEl, rangesInput, rangesWrap, gridEl;
+  let dropEl, configEl, metaEl, rangesInput, rangesWrap, gridEl, joinCheck, summaryEl;
 
-  // Parsea "1-3, 5, 8-10" a un array de índices (0-based), validando límites.
-  function parseRanges(text, max) {
-    const result = [];
+  // Parsea "1-3, 5, 8-10" en tramos: [{label, indices}] (índices 0-based),
+  // validando límites. Cada elemento separado por comas es un tramo.
+  function parseTramos(text, max) {
+    const tramos = [];
     const parts = text.split(',').map(s => s.trim()).filter(Boolean);
     if (!parts.length) throw new Error('Indica al menos una página o rango.');
     for (const part of parts) {
       const m = part.match(/^(\d+)\s*-\s*(\d+)$/);
+      let a, b;
       if (m) {
-        let a = +m[1], b = +m[2];
+        a = +m[1]; b = +m[2];
         if (a > b) [a, b] = [b, a];
-        for (let p = a; p <= b; p++) pushPage(p);
       } else if (/^\d+$/.test(part)) {
-        pushPage(+part);
+        a = b = +part;
       } else {
         throw new Error(`Formato no válido: "${part}"`);
       }
+      if (a < 1 || b > max) throw new Error(`El tramo "${part}" está fuera de rango (1–${max}).`);
+      const indices = [];
+      for (let p = a; p <= b; p++) indices.push(p - 1);
+      tramos.push({ label: a === b ? `${a}` : `${a}-${b}`, indices });
     }
-    function pushPage(p) {
-      if (p < 1 || p > max) throw new Error(`La página ${p} está fuera de rango (1–${max}).`);
-      result.push(p - 1);
-    }
-    return result;
+    return tramos;
   }
+  const parseRanges = (text, max) => parseTramos(text, max).flatMap(t => t.indices);
 
   // Comprime una lista ordenada de páginas 1-based en texto "1-3, 5, 8-10"
   function compressToRanges(nums) {
@@ -57,6 +59,19 @@ const Split = (() => {
     const included = [];
     for (let i = 0; i < pageCount; i++) if (!excluded.has(i)) included.push(i + 1);
     rangesInput.value = compressToRanges(included);
+    updateSummary();
+  }
+
+  // Avisa de cuántos PDF se van a generar con el texto actual.
+  function updateSummary() {
+    try {
+      const n = parseTramos(rangesInput.value, pageCount).length;
+      summaryEl.textContent = (joinCheck.checked || n === 1)
+        ? 'Se generará 1 PDF con todas las páginas indicadas.'
+        : `Se generarán ${n} PDF (uno por tramo) en un ZIP.`;
+    } catch (e) {
+      summaryEl.textContent = '';
+    }
   }
 
   async function load(files) {
@@ -149,6 +164,7 @@ const Split = (() => {
       excluded = new Set();
       for (let i = 0; i < pageCount; i++) if (!included.has(i)) excluded.add(i);
       applyAllCardStates();
+      updateSummary();
     } catch (e) {
       // Entrada incompleta o inválida mientras se escribe: no tocar la rejilla todavía.
     }
@@ -165,15 +181,29 @@ const Split = (() => {
     try {
       const src = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
       if (mode === 'ranges') {
-        const indices = [];
-        for (let i = 0; i < pageCount; i++) if (!excluded.has(i)) indices.push(i);
-        if (!indices.length) throw new Error('No queda ninguna página seleccionada.');
-        const out = await PDFLib.PDFDocument.create();
-        const pages = await out.copyPages(src, indices);
-        pages.forEach(p => out.addPage(p));
-        const outBytes = await out.save();
-        downloadBytes(outBytes, `${baseName(file.name)}_extraido.pdf`);
-        toast(`Extraídas ${indices.length} páginas.`);
+        const tramos = parseTramos(rangesInput.value, pageCount);
+        if (joinCheck.checked || tramos.length === 1) {
+          const indices = tramos.flatMap(t => t.indices);
+          const out = await PDFLib.PDFDocument.create();
+          const pages = await out.copyPages(src, indices);
+          pages.forEach(p => out.addPage(p));
+          downloadBytes(await out.save(), `${baseName(file.name)}_extraido.pdf`);
+          toast(`Extraídas ${indices.length} páginas en 1 PDF.`);
+        } else {
+          const zip = new JSZip();
+          const used = new Set();
+          for (const t of tramos) {
+            const out = await PDFLib.PDFDocument.create();
+            const pages = await out.copyPages(src, t.indices);
+            pages.forEach(p => out.addPage(p));
+            let name = `${baseName(file.name)}_pag${t.label}.pdf`;
+            for (let k = 2; used.has(name); k++) name = `${baseName(file.name)}_pag${t.label}_${k}.pdf`;
+            used.add(name);
+            zip.file(name, await out.save());
+          }
+          downloadBlob(await zip.generateAsync({ type: 'blob' }), `${baseName(file.name)}_tramos.zip`);
+          toast(`Generados ${tramos.length} PDF en un ZIP.`);
+        }
       } else {
         // Una página por PDF, empaquetadas en un ZIP
         const zip = new JSZip();
@@ -210,6 +240,9 @@ const Split = (() => {
     rangesInput = document.getElementById('split-ranges');
     rangesWrap = document.getElementById('split-ranges-wrap');
     gridEl = document.getElementById('split-grid');
+    joinCheck = document.getElementById('split-join');
+    summaryEl = document.getElementById('split-summary');
+    joinCheck.addEventListener('change', updateSummary);
     setupDropzone(dropEl, document.getElementById('split-input'), load, { multiple: false });
     document.getElementById('split-run').addEventListener('click', run);
     document.getElementById('split-clear').addEventListener('click', reset);

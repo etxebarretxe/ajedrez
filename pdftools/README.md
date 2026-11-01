@@ -7,11 +7,13 @@ más habituales.
 ## Funciones
 
 - 📎 **Unir** — combina varios PDF en uno; arrastra para reordenarlos.
-- ✂️ **Separar** — extrae páginas o rangos (`1-3, 5, 8-10`) a un PDF, o separa
-  cada página en su propio PDF dentro de un ZIP. Muestra miniaturas de todas
+- ✂️ **Separar** — con varios tramos (`1-20, 28-50, 51-90`) genera un PDF por
+  tramo dentro de un ZIP; marcando "Juntar todos los tramos" los une en un solo
+  PDF. También puede separar cada página en su propio PDF (ZIP). Muestra miniaturas de todas
   las páginas: haz clic en una para quitarla (o escribe el rango a mano, las
   dos vistas se mantienen sincronizadas).
-- 🗂️ **Organizar** — reordena páginas arrastrando, rótalas o elimínalas.
+- 🗂️ **Organizar** — reordena páginas arrastrando, rótalas o elimínalas. Las
+  miniaturas se cargan una sola vez: mover, rotar o borrar no las recarga.
 - 🗜️ **Comprimir** — reduce el tamaño. Dos modos:
   - *Rasterizado* (Suave / Media / Fuerte): reduce mucho los PDF con imágenes o
     escaneados; el texto deja de ser seleccionable.

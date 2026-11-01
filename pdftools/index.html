@@ -59,12 +59,14 @@
         <div class="split-config hidden" id="split-config">
           <p class="file-meta" id="split-meta"></p>
           <div class="field-row">
-            <label><input type="radio" name="split-mode" value="ranges" checked> Extraer rangos a un solo PDF</label>
+            <label><input type="radio" name="split-mode" value="ranges" checked> Extraer páginas o tramos</label>
             <label><input type="radio" name="split-mode" value="each"> Separar cada página en su propio PDF (ZIP)</label>
           </div>
           <div id="split-ranges-wrap" class="field">
             <label for="split-ranges">Páginas / rangos (ej. <code>1-3, 5, 8-10</code>)</label>
             <input type="text" id="split-ranges" placeholder="1-3, 5, 8-10">
+            <label class="check"><input type="checkbox" id="split-join"> Juntar todos los tramos en un solo PDF</label>
+            <p class="file-meta" id="split-summary"></p>
             <p class="hint">O haz clic en las páginas de abajo para quitarlas (vuelve a hacer clic para restaurarlas).</p>
             <div class="thumb-grid" id="split-grid"></div>
           </div>

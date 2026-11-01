@@ -1,7 +1,12 @@
-/* organize.js — Reordenar, rotar y eliminar páginas */
+/* organize.js — Reordenar, rotar y eliminar páginas.
+
+   Rendimiento: las miniaturas se dibujan UNA sola vez al cargar el archivo
+   (es la parte cara: pdf.js tiene que renderizar cada página). Después,
+   rotar, eliminar o reordenar solo cambia el estilo o la posición de las
+   tarjetas ya creadas, sin volver a dibujar nada. */
 const Organize = (() => {
   let file = null, bytes = null, pdfjsDoc = null;
-  let pages = [];       // [{ origIndex, rotation, deleted }]
+  let pages = [];       // [{ origIndex, rotation, deleted, card, canvas, delBtn }] en orden visual
   let dropEl, toolbarEl, gridEl, metaEl;
 
   async function load(files) {
@@ -18,7 +23,7 @@ const Organize = (() => {
       metaEl.textContent = `${file.name} · ${pdfjsDoc.numPages} páginas`;
       dropEl.classList.add('hidden');
       toolbarEl.classList.remove('hidden');
-      await renderGrid();
+      await buildGrid();
     } catch (err) {
       console.error(err);
       toast('No se pudo abrir el PDF: ' + err.message, true);
@@ -27,17 +32,22 @@ const Organize = (() => {
     }
   }
 
-  async function renderGrid() {
+  // Construye la rejilla una vez. `buildGen` protege el caso de cargar otro
+  // archivo mientras el anterior aún se estaba construyendo.
+  let buildGen = 0;
+  async function buildGrid() {
+    const myGen = ++buildGen;
     gridEl.innerHTML = '';
-    for (let pos = 0; pos < pages.length; pos++) {
-      const state = pages[pos];
-      const card = document.createElement('div');
-      card.className = 'thumb' + (state.deleted ? ' deleted' : '');
-      card.draggable = true;
-      card.dataset.pos = pos;
-
+    const snapshot = pages.slice();
+    for (let n = 0; n < snapshot.length; n++) {
+      const state = snapshot[n];
+      showSpinner(`Cargando miniaturas ${n + 1}/${snapshot.length}…`);
       const { canvas } = await renderPageToCanvas(pdfjsDoc, state.origIndex + 1, 150);
-      canvas.style.transform = `rotate(${state.rotation}deg)`;
+      if (myGen !== buildGen) return;
+
+      const card = document.createElement('div');
+      card.className = 'thumb';
+      card.draggable = true;
       card.appendChild(canvas);
 
       const pnum = document.createElement('span');
@@ -49,37 +59,53 @@ const Organize = (() => {
       actions.className = 'thumb-actions';
       actions.innerHTML = `
         <button data-act="rot" title="Rotar 90°">⟳</button>
-        <button data-act="del" title="${state.deleted ? 'Restaurar' : 'Eliminar'}">${state.deleted ? '↺' : '🗑'}</button>`;
+        <button data-act="del"></button>`;
+      const delBtn = actions.querySelector('[data-act="del"]');
       actions.querySelector('[data-act="rot"]').addEventListener('click', (e) => {
         e.stopPropagation();
         state.rotation = (state.rotation + 90) % 360;
-        renderGrid();
+        applyCardState(state);
       });
-      actions.querySelector('[data-act="del"]').addEventListener('click', (e) => {
+      delBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         state.deleted = !state.deleted;
-        renderGrid();
+        applyCardState(state);
       });
       card.appendChild(actions);
-      addDragHandlers(card);
+
+      Object.assign(state, { card, canvas, delBtn });
+      addDragHandlers(state);
+      applyCardState(state);
       gridEl.appendChild(card);
     }
   }
 
-  let dragPos = null;
-  function addDragHandlers(card) {
-    card.addEventListener('dragstart', () => { dragPos = +card.dataset.pos; card.classList.add('dragging'); });
+  // Refleja el estado de una página en su tarjeta ya existente (barato).
+  function applyCardState(state) {
+    state.card.classList.toggle('deleted', state.deleted);
+    state.canvas.style.transform = `rotate(${state.rotation}deg)`;
+    state.delBtn.textContent = state.deleted ? '↺' : '🗑';
+    state.delBtn.title = state.deleted ? 'Restaurar' : 'Eliminar';
+  }
+
+  let dragState = null;
+  function addDragHandlers(state) {
+    const card = state.card;
+    card.addEventListener('dragstart', () => { dragState = state; card.classList.add('dragging'); });
     card.addEventListener('dragend', () => { card.classList.remove('dragging'); clearTargets(); });
     card.addEventListener('dragover', (e) => { e.preventDefault(); card.classList.add('drop-target'); });
     card.addEventListener('dragleave', () => card.classList.remove('drop-target'));
     card.addEventListener('drop', (e) => {
       e.preventDefault();
-      const target = +card.dataset.pos;
-      if (dragPos === null || dragPos === target) return;
-      const [moved] = pages.splice(dragPos, 1);
-      pages.splice(target, 0, moved);
-      dragPos = null;
-      renderGrid();
+      if (!dragState || dragState === state) return;
+      const from = pages.indexOf(dragState);
+      const to = pages.indexOf(state);
+      pages.splice(from, 1);
+      pages.splice(to, 0, dragState);
+      // Mueve solo el nodo: queda después del destino si venía de antes, antes si venía de después.
+      if (from < to) card.after(dragState.card); else card.before(dragState.card);
+      dragState = null;
+      clearTargets();
     });
   }
   function clearTargets() {
@@ -112,6 +138,7 @@ const Organize = (() => {
   }
 
   function reset() {
+    buildGen++;
     file = bytes = pdfjsDoc = null; pages = [];
     gridEl.innerHTML = '';
     toolbarEl.classList.add('hidden');
