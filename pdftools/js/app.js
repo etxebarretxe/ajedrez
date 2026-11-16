@@ -37,6 +37,7 @@
   Organize.init();
   Compress.init();
   Edit.init();
+  Redact.init();
   Img2Pdf.init();
   Watermark.init();
 })();

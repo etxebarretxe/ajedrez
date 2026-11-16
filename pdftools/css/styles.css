@@ -221,3 +221,11 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-
   .nav-btn { flex-direction: column; gap: 2px; font-size: 10px; padding: 8px 4px; }
   .content { padding: 16px; }
 }
+
+/* Tachar */
+.redact-overlay { cursor: crosshair; }
+.redact-box { outline: 1px dashed rgba(128,128,128,.8); }
+.redact-box.selected { outline: 2px solid var(--accent); }
+.redact-box.drawing { pointer-events: none; opacity: .85; }
+.redact-options { margin-top: 12px; }
+.segmented.small button { padding: 4px 12px; font-size: 13px; }

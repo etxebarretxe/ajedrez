@@ -26,6 +26,7 @@
       <button class="nav-btn" data-tool="organize"><span>🗂️</span> Organizar</button>
       <button class="nav-btn" data-tool="compress"><span>🗜️</span> Comprimir</button>
       <button class="nav-btn" data-tool="edit"><span>✏️</span> Editar</button>
+      <button class="nav-btn" data-tool="redact"><span>⬛</span> Tachar</button>
       <button class="nav-btn" data-tool="img2pdf"><span>🖼️</span> Imagen a PDF</button>
       <button class="nav-btn" data-tool="watermark"><span>🛡️</span> Marca de agua</button>
     </nav>
@@ -162,6 +163,60 @@
             </div>
           </div>
           <p class="hint">Consejo: arrastra una caja para moverla. Haz doble clic para escribir dentro. Arrastra desde el borde inferior derecho para redimensionar. Los elementos son por página.</p>
+          <p class="hint">⚠️ "Tapar (blanco)" solo oculta a la vista: el texto de debajo sigue en el archivo y se puede copiar, buscar o leer con una IA. Para ocultar datos de verdad usa <b>Tachar</b>.</p>
+        </div>
+      </section>
+
+      <!-- REDACT -->
+      <section class="tool hidden" id="tool-redact">
+        <div class="tool-head">
+          <h2>⬛ Tachar (de verdad)</h2>
+          <p>Elimina del archivo lo que tapes. Las páginas con tachados se convierten en imagen; el resto queda intacto.</p>
+        </div>
+        <div class="dropzone" id="redact-drop">
+          <p>Arrastra aquí un PDF o <label class="link">selecciónalo<input type="file" accept="application/pdf" hidden id="redact-input"></label></p>
+        </div>
+        <div class="editor hidden" id="redact-editor">
+          <div class="editor-toolbar">
+            <span class="tool-field">Color</span>
+            <div class="segmented small" id="redact-color">
+              <button data-color="#000000" class="active">Negro</button>
+              <button data-color="#ffffff">Blanco</button>
+            </div>
+            <span class="divider"></span>
+            <button class="btn small danger" id="redact-delete" disabled>🗑 Borrar recuadro</button>
+            <button class="btn small" id="redact-clear-page">Quitar todos de esta página</button>
+            <div class="spacer"></div>
+            <span class="file-meta" id="redact-pageinfo"></span>
+            <button class="btn small" id="redact-prev">◀</button>
+            <button class="btn small" id="redact-next">▶</button>
+            <span class="divider"></span>
+            <button class="btn ghost small" id="redact-reset">Cambiar archivo</button>
+          </div>
+          <div class="editor-stage" id="redact-stage">
+            <div class="page-wrap redact-wrap" id="redact-page-wrap">
+              <canvas id="redact-canvas"></canvas>
+              <div class="overlay redact-overlay" id="redact-overlay"></div>
+            </div>
+          </div>
+          <p class="file-meta" id="redact-count"></p>
+          <p class="hint">Arrastra sobre la página para dibujar un recuadro. Haz clic en uno para seleccionarlo; muévelo arrastrando o cambia su tamaño desde la esquina inferior derecha. Supr lo borra.</p>
+          <div class="redact-options">
+            <label class="check"><input type="checkbox" id="redact-ocr" checked> Aplicar OCR a las páginas tachadas (vuelven a tener texto buscable, sin lo tachado)</label>
+            <p class="hint" id="redact-ocr-hint">El OCR se hace en tu equipo. La primera vez tarda unos segundos en cargar el motor; luego cada página tarda entre 5 y 20 segundos según el ordenador.</p>
+            <div class="field">
+              <label for="redact-dpi">Calidad de las páginas tachadas</label>
+              <select id="redact-dpi">
+                <option value="150">Ligera (150 ppp, archivo pequeño)</option>
+                <option value="200" selected>Normal (200 ppp)</option>
+                <option value="300">Alta (300 ppp, mejor OCR, archivo grande)</option>
+              </select>
+            </div>
+            <div class="actions">
+              <button class="btn primary" id="redact-run">Aplicar tachado y descargar</button>
+            </div>
+          </div>
+          <div class="result hidden" id="redact-result"></div>
         </div>
       </section>
 
@@ -269,6 +324,7 @@
   <script src="vendor/fontkit.umd.min.js"></script>
   <script src="vendor/jszip.min.js"></script>
   <script src="vendor/pdf.min.js"></script>
+  <script src="vendor/tesseract/tesseract.min.js"></script>
   <!-- App -->
   <script src="js/common.js"></script>
   <script src="js/merge.js"></script>
@@ -276,6 +332,7 @@
   <script src="js/organize.js"></script>
   <script src="js/compress.js"></script>
   <script src="js/edit.js"></script>
+  <script src="js/redact.js"></script>
   <script src="js/img2pdf.js"></script>
   <script src="js/watermark.js"></script>
   <script src="js/app.js"></script>
